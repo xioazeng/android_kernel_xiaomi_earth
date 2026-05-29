@@ -1,0 +1,59 @@
+name: Build Xiaomi 12C Kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+          git curl ccache automake flex lzop bison gperf \
+          build-essential zip zlib1g-dev gcc-multilib \
+          g++-multilib libc6-dev-i386 lib32ncurses5-dev \
+          x11proto-core-dev libx11-dev lib32z1-dev \
+          libgl1-mesa-dev libxml2-utils xsltproc unzip \
+          python3 bc libssl-dev
+
+      - name: Setup Clang
+        run: |
+          git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
+
+      - name: Build Kernel
+        run: |
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export KBUILD_BUILD_USER=github
+          export KBUILD_BUILD_HOST=actions
+
+          export PATH=$PWD/clang/bin:$PATH
+
+          mkdir -p out
+
+          make O=out ARCH=arm64 earth_defconfig
+
+          make -j$(nproc --all) \
+          O=out \
+          ARCH=arm64 \
+          CC=clang \
+          CROSS_COMPILE=aarch64-linux-gnu- \
+          CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+
+      - name: Check Build Output
+        run: |
+          find out/arch/arm64/boot/ -type f
+
+      - name: Upload Kernel
+        uses: actions/upload-artifact@v4
+        with:
+          name: Xiaomi12C-Kernel
+          path: |
+            out/arch/arm64/boot/Image*
+            out/arch/arm64/boot/dtb*
