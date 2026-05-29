@@ -1,4 +1,3 @@
-```yml
 name: Build Xiaomi 12C Kernel
 
 on:
@@ -77,4 +76,3 @@ jobs:
           path: |
             out/arch/arm64/boot/Image*
             out/arch/arm64/boot/dtb*
-```
