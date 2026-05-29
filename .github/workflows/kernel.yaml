@@ -1,3 +1,4 @@
+```yml
 name: Build Xiaomi 12C Kernel
 
 on:
@@ -15,58 +16,26 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y \
-          git curl ccache automake flex lzop bison gperf \
-          build-essential zip zlib1g-dev gcc-multilib \
-          g++-multilib libc6-dev-i386 lib32ncurses5-dev \
-          x11proto-core-dev libx11-dev lib32z1-dev \
-          libgl1-mesa-dev libxml2-utils xsltproc unzip \
-          python3 bc libssl-dev wget
+          git curl wget ccache automake flex lzop \
+          bison gperf build-essential zip zlib1g-dev \
+          gcc-multilib g++-multilib libc6-dev-i386 \
+          lib32ncurses5-dev x11proto-core-dev \
+          libx11-dev lib32z1-dev libgl1-mesa-dev \
+          libxml2-utils xsltproc unzip python3 bc \
+          libssl-dev
 
+      # ===== Proton Clang =====
       - name: Setup Clang
         run: |
           git clone --depth=1 \
           https://github.com/kdrag0n/proton-clang clang
 
-      # ===== KernelSU Next 最新版 =====
-      - name: Setup KernelSU Next
+      # ===== KernelSU Next + 最新 SUSFS =====
+      - name: Setup KernelSU Next + SUSFS
         run: |
           curl -LSs \
-          "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/dev/kernel/setup.sh" \
-          | bash -s dev
-
-      # ===== 最新 SUSFS (4.19 NON-GKI) =====
-      # ===== SUSFS for KernelSU Next (4.19) =====
-      - name: Setup Latest SUSFS
-        run: |
-          echo "Kernel Version:"
-          make kernelversion
-
-          KERNEL_VER=$(make kernelversion)
-
-          # 克隆真正的 SUSFS 内核补丁仓库
-            git clone --depth=1 \
-            https://github.com/sidex15/susfs4ksu-module.git susfs || true
-
-            echo "===== GIT REMOTE ====="
-            cd susfs
-            git remote -v
-            pwd
-            ls -lah
-            cd ..
-
-          if [[ "$KERNEL_VER" == 4.19* ]]; then
-            echo "Detected Linux 4.19"
-
-            # 查看目录（方便调试）
-            find susfs -maxdepth 3 -type d
-
-            # 复制 4.19 patch
-            cp -rf susfs/kernel_patches/4.19/* .
-
-          else
-            echo "Unsupported kernel version: $KERNEL_VER"
-            exit 1
-          fi
+          "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next-susfs-dev/kernel/setup.sh" \
+          | bash -s next-susfs-dev
 
       - name: Build Kernel
         run: |
@@ -79,14 +48,17 @@ jobs:
 
           mkdir -p out
 
+          # 加载 defconfig
           make O=out ARCH=arm64 earth_defconfig
 
-          # 启用 KernelSU + SUSFS
-          echo "CONFIG_KSU=y" >> out/.config
-          echo "CONFIG_KSU_SUSFS=y" >> out/.config
+          # 强制开启 KSU + SUSFS
+          scripts/config --file out/.config \
+            -e KSU \
+            -e KSU_SUSFS
 
           make O=out ARCH=arm64 olddefconfig
 
+          # 编译
           make -j$(nproc --all) \
             O=out \
             ARCH=arm64 \
@@ -101,7 +73,8 @@ jobs:
       - name: Upload Kernel
         uses: actions/upload-artifact@v4
         with:
-          name: Xiaomi12C-Kernel
+          name: Xiaomi12C-Kernel-KSUNext-SUSFS
           path: |
             out/arch/arm64/boot/Image*
             out/arch/arm64/boot/dtb*
+```
