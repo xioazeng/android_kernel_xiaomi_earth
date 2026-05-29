@@ -43,16 +43,27 @@ jobs:
           git clone --depth=1 \
           https://github.com/sidex15/ksu_module_susfs.git susfs
 
-          # 检测 4.19
+          echo "SUSFS repo structure:"
+          find susfs -maxdepth 3 -type d
+
           KERNEL_VER=$(make kernelversion)
 
           if [[ "$KERNEL_VER" == 4.19* ]]; then
             echo "Detected Linux 4.19"
 
-            # 覆盖 SUSFS patch
-            cp -rf susfs/kernel_patches/KernelSU-Next/4.19/* .
+            # 自动寻找 4.19 patch
+            PATCH_DIR=$(find susfs -type d | grep "4.19" | head -n 1)
+
+            echo "Found patch path: $PATCH_DIR"
+
+            if [ -z "$PATCH_DIR" ]; then
+              echo "No 4.19 patch found!"
+              exit 1
+            fi
+
+            cp -rf "$PATCH_DIR"/* .
           else
-            echo "Unsupported kernel version"
+            echo "Unsupported kernel version: $KERNEL_VER"
             exit 1
           fi
 
