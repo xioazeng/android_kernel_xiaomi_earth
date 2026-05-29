@@ -29,7 +29,7 @@ jobs:
       # ===== 安装 KernelSU Next =====
       - name: Setup KernelSU Next (Latest)
         run: |
-          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next-susfs-dev/kernel/setup.sh" | bash -s next-susfs-dev
+          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next-susfs-dev/kernel/setup.sh" | bash -s next-susfs-dev
 
       # ===== 安装 SUSFS (自动适配 4.19 NON-GKI) =====
       - name: Setup SUSFS
