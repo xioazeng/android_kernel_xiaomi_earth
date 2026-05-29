@@ -26,6 +26,47 @@ jobs:
         run: |
           git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
 
+      # ===== 安装 KernelSU Next =====
+      - name: Setup KernelSU Next (Latest)
+        run: |
+          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next-susfs-dev/kernel/setup.sh" | bash -s next-susfs-dev
+
+      # ===== 安装 SUSFS (自动适配 4.19 NON-GKI) =====
+      - name: Setup SUSFS
+        run: |
+          cd KernelSU-Next
+
+          git submodule update --init --recursive
+
+          SUSFS_VER=$(curl -s https://api.github.com/repos/sidex15/susfs4ksu/releases/latest | grep tag_name | cut -d '"' -f4)
+
+          echo "Latest SUSFS Version: $SUSFS_VER"
+
+          cd ..
+
+          git clone --depth=1 -b gki-android12-5.10 https://github.com/sidex15/susfs4ksu.git susfs-temp || true
+
+          # 自动检测 4.19 内核
+          KERNEL_VER=$(make kernelversion)
+
+          echo "Kernel Version: $KERNEL_VER"
+
+          if [[ "$KERNEL_VER" == 4.19* ]]; then
+            echo "Detected Linux 4.19"
+
+            rm -rf susfs-temp
+
+            git clone https://github.com/sidex15/susfs4ksu.git
+            cd susfs4ksu
+
+            # 自动切到 4.19 分支
+            git checkout kernel-4.19
+
+            cd ..
+
+            cp -r susfs4ksu/kernel_patches/4.19/* . || true
+          fi
+
       - name: Build Kernel
         run: |
           export ARCH=arm64
@@ -39,16 +80,23 @@ jobs:
 
           make O=out ARCH=arm64 earth_defconfig
 
+          # 启用 KSU
+          scripts/config --file out/.config \
+            -e KSU \
+            -e KSU_SUSFS
+
+          make O=out ARCH=arm64 olddefconfig
+
           make -j$(nproc --all) \
-          O=out \
-          ARCH=arm64 \
-          CC=clang \
-          CROSS_COMPILE=aarch64-linux-gnu- \
-          CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+            O=out \
+            ARCH=arm64 \
+            CC=clang \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
       - name: Check Build Output
         run: |
-          find out/arch/arm64/boot/ -type f
+          ls -lah out/arch/arm64/boot/
 
       - name: Upload Kernel
         uses: actions/upload-artifact@v4
