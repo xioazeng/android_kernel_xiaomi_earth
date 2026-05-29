@@ -35,33 +35,27 @@ jobs:
           | bash -s dev
 
       # ===== 最新 SUSFS (4.19 NON-GKI) =====
+      # ===== SUSFS for KernelSU Next (4.19) =====
       - name: Setup Latest SUSFS
         run: |
           echo "Kernel Version:"
           make kernelversion
 
-          git clone --depth=1 \
-          https://github.com/sidex15/ksu_module_susfs.git susfs
-
-          echo "SUSFS repo structure:"
-          find susfs -maxdepth 3 -type d
-
           KERNEL_VER=$(make kernelversion)
+
+          # 克隆真正的 SUSFS 内核补丁仓库
+            git clone --depth=1 \
+            https://github.com/sidex15/susfs4ksu-module.git susfs
 
           if [[ "$KERNEL_VER" == 4.19* ]]; then
             echo "Detected Linux 4.19"
 
-            # 自动寻找 4.19 patch
-            PATCH_DIR=$(find susfs -type d | grep "4.19" | head -n 1)
+            # 查看目录（方便调试）
+            find susfs -maxdepth 3 -type d
 
-            echo "Found patch path: $PATCH_DIR"
+            # 复制 4.19 patch
+            cp -rf susfs/kernel_patches/4.19/* .
 
-            if [ -z "$PATCH_DIR" ]; then
-              echo "No 4.19 patch found!"
-              exit 1
-            fi
-
-            cp -rf "$PATCH_DIR"/* .
           else
             echo "Unsupported kernel version: $KERNEL_VER"
             exit 1
