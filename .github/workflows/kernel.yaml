@@ -45,7 +45,14 @@ jobs:
 
           # 克隆真正的 SUSFS 内核补丁仓库
             git clone --depth=1 \
-            https://github.com/sidex15/susfs4ksu-module.git susfs
+            https://github.com/sidex15/susfs4ksu-module.git susfs || true
+
+            echo "===== GIT REMOTE ====="
+            cd susfs
+            git remote -v
+            pwd
+            ls -lah
+            cd ..
 
           if [[ "$KERNEL_VER" == 4.19* ]]; then
             echo "Detected Linux 4.19"
