@@ -29,12 +29,22 @@ jobs:
           git clone --depth=1 \
           https://github.com/kdrag0n/proton-clang clang
 
-      # ===== KernelSU Next + 最新 SUSFS =====
+
+      # ===== KernelSU Next + SUSFS =====
       - name: Setup KernelSU Next + SUSFS
         run: |
-          curl -LSs \
-          "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next-susfs-dev/kernel/setup.sh" \
-          | bash -s next-susfs-dev
+          git clone --depth=1 \
+          -b next-susfs-dev \
+          https://github.com/KernelSU-Next/KernelSU-Next.git KernelSU-Next
+
+          cd KernelSU-Next
+
+          chmod +x kernel/setup.sh
+
+          # 安装到当前内核源码
+          bash kernel/setup.sh next-susfs-dev
+
+          cd ..
 
       - name: Build Kernel
         run: |
